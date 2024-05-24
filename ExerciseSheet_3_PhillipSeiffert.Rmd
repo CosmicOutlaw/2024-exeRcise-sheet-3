@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r}
 pacman::p_load(
-  dplyr,gglot2
+  dplyr,ggplot2
 )
 ```
 
@@ -108,6 +108,28 @@ b)  Load the data for both years into R. Check the type of the count
     not numeric? Fix the problem in an appropriate manner, it is OK if
     some of the counts are inaccurate because of this. Explain your
     solution and the repercussions.
+    
+```{r}
+names_2022 <- read.csv("open_data_portal_2022.csv")
+names_2023 <- read.csv("vornamen-muenchen-2023.csv")
+
+colnames(names_2022) <- tolower(colnames(names_2022))
+colnames(names_2023) <- tolower(colnames(names_2023))
+
+names_2022 <- names_2022 %>% 
+  filter(anzahl != '4 oder weniger')
+names_2023 <- names_2023 %>% 
+  filter(anzahl != '4 oder weniger')
+
+names_2022$anzahl <- names_2022$anzahl %>% 
+  as.numeric()
+names_2023$anzahl <- names_2023$anzahl %>% 
+  as.numeric()
+```
+
+- The column 'Anzahl' is non-numeric because for a name count of 4 or less, the data set is no longer tracking the actual count and instead simply labels those names as '4 oder weniger'. As a consequence of this, the column is considered a character variable. This is the case for both data sets.
+- There are various solutions to fixing these rows: replace with minimum, midpoint or maximum value. Because I don't want to over- or underestimate the actual counts of these low-count names, I decided against replacing this string and for excluding these rows. This means that I lose about 4.000 rows per data set and am left with about 600 observations per data set.
+- Assuming that the amount of name count = 4, count = 3 and maybe count = 2 is similar to count = 5 and count = 6 (50-100 observations), replacing the string in question with a minimum value of 1 would probably yield less exposure than expected. Hence, replacing with a minimum value of 1 would be my second option here. I just decided against any inaccuracy in the data set and rather work with values that I am confident in.
 
 c)  Calculate the total number of babies born in Munich in 2022
     and 2023. Which year had the bigger baby-boom?
