@@ -3,7 +3,10 @@ title: "Exercise #3"
 subtitle: "Fortgeschrittene Statistische Software für NF - SS 2024"
 author: "Phillip Seiffert (12462288)"
 date: "`r Sys.Date()`"
-output: distill::distill_article
+output:
+  distill::distill_article:
+    toc: true
+    toc_float: false
 editor_options: 
   chunk_output_type: console
 ---
@@ -14,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r}
 pacman::p_load(
-  dplyr,ggplot2
+  dplyr,ggplot2,tidyr,kableExtra,knitr
 )
 ```
 
@@ -160,6 +163,30 @@ names <- bind_rows(names_2022, names_2023)
 f)  Combine the counts for same names to determine the most popular
     names across both years. Print out the top 10 names in a nicely
     formatted table for both years. Include a table caption.
+    
+```{r}
+names_wide <- names %>% 
+  pivot_wider(
+    names_from = year, 
+    values_from = anzahl, 
+    names_prefix = "anzahl_",
+    values_fill = list(anzahl = 0)) %>% 
+  mutate(
+    anzahl_total = anzahl_2022 + anzahl_2023
+  ) %>% 
+  arrange(desc(anzahl_total)) %>% 
+  head(10)
+```
+
+```{r Top-10-Names}
+names_wide %>% 
+  kbl(
+    caption = "Top 10 first names of newborns in Munich across 2022 and 2023",
+    col.names = c("Vorname", "Geschlecht", "Anzahl 2022", "Anzahl 2023", "Anzahl Total")
+  )
+```
+
+- I assume here that the exercise, despite saying 'across both years' and then 'for both years', wants me to show the total counts across (!) 2022 and 2023. For both years would technically mean creating two tables, in my opinion.
 
 ## Exercise 4: Open Analysis (4 points)
 
