@@ -133,6 +133,8 @@ names_2023$anzahl <- names_2023$anzahl %>%
 
 c)  Calculate the total number of babies born in Munich in 2022
     and 2023. Which year had the bigger baby-boom?
+    
+- In the year 2022 `r sum(names_2022$anzahl)` babies with a name that occurred at least five times were born in Munich, while that number decreased to `r sum(names_2023$anzahl)` a year later. Given the adjustments made, it's difficult to say which year had the bigger baby boom (which would also be an issue if the adjustment were not made as a few thousand observations have inaccurate values).
 
 d)  Add a new column `year` to both datasets which holds the correct
     year for each.
