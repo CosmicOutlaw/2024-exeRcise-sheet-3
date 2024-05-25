@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r}
 pacman::p_load(
-  dplyr,ggplot2,tidyr,kableExtra,knitr
+  dplyr,ggplot2,tidyr,kableExtra,knitr,Cairo,ggtext
 )
 ```
 
@@ -213,10 +213,108 @@ d)  Come up with a (research) question you want to answer with the data
     and briefly explain why you believe this is an interesting question
     within one sentence. It should be a question that can be answered
     with the dataset and using R.
+    
+- Research question: How have democracy and its values changed throughout presidential terms?
+- Motivation: In an age of political polarization, U.S. presidencies are said to swing from advancing the country along partisan lines to undoing whatever the last party in power has been doing throughout the previous administration and beginning anew with advancing the country along their own partisan lines. Have these swings in executive behavior and policies affected the very foundation of democracy? Can they be witnessed by looking at the existence and quality of democracy?
+
 e)  Use R to answer your chosen question.
+
+```{r}
+democracy <- read.csv("vdem_row_final.csv")
+
+# Adding presidents' names and parties to the data set
+# with ggtext I can include HTML code in a string to later access it via element_markdown() in axis.text()
+
+democracy <- democracy %>% 
+  filter(country_name == "United States") %>% 
+  mutate(president = case_when(
+    year >= 2021 & year <= 2024 ~ "<span style='color:blue'>Joe Biden (D)</span>",
+    year >= 2017 & year <= 2020 ~ "<span style='color:red'>Donald Trump (R)</span>",
+    year >= 2009 & year <= 2016 ~ "<span style='color:blue'>Barack Obama (D)</span>",
+    year >= 2001 & year <= 2008 ~ "<span style='color:red'>George W. Bush Jr. (R)</span>",
+    year >= 1993 & year <= 2000 ~ "<span style='color:blue'>Bill Clinton (D)</span>",
+    year >= 1989 & year <= 1992 ~ "<span style='color:red'>George H. W. Bush Sr. (R)</span>",
+    year >= 1981 & year <= 1988 ~ "<span style='color:red'>Ronald Reagan (R)</span>",
+    year >= 1977 & year <= 1980 ~ "<span style='color:blue'>Jimmy Carter (D)</span>",
+    year >= 1974 & year <= 1976 ~ "<span style='color:red'>Gerald Ford (R)</span>",
+    year >= 1969 & year <= 1974 ~ "<span style='color:red'>Richard Nixon (R)</span>",
+    year >= 1963 & year <= 1968 ~ "<span style='color:blue'>Lyndon B. Johnson (D)</span>",
+    year >= 1961 & year <= 1963 ~ "<span style='color:blue'>John F. Kennedy (D)</span>",
+    year >= 1953 & year <= 1960 ~ "<span style='color:red'>Dwight D. Eisenhower (R)</span>",
+    year >= 1945 & year <= 1952 ~ "<span style='color:blue'>Harry S. Truman (D)</span>",
+    year >= 1933 & year <= 1944 ~ "<span style='color:blue'>Franklin D. Roosevelt (D)</span>",
+    TRUE ~ NA_character_
+  )) %>% 
+  select(country_name, 
+         year, president, 
+         electdem_vdem_owid, 
+         libdem_vdem_owid, 
+         particip_vdem_owid, 
+         delibdem_vdem_owid, 
+         egaldem_vdem_owid) %>%
+  arrange(desc(year))
+```
+
+```{r V-Dem-Across-Presidents, fig.cap = "Varieties of Democracy across U.S. Presidents"}
+ggplot(data = subset(democracy, year>= 1932),
+       mapping = aes(
+         x = year
+       )) +
+  geom_line(aes(y = electdem_vdem_owid, color = "Electoral Democracy"), size = 1) +
+  geom_line(aes(y = libdem_vdem_owid, color = "Liberal Democracy"), size = 1) +
+  geom_line(aes(y = particip_vdem_owid, color = "Participatory Democracy"), size = 1) +
+  geom_line(aes(y = delibdem_vdem_owid, color = "Deliberative Democracy"), size = 1) +
+  geom_line(aes(y = egaldem_vdem_owid, color = "Egalitarian Democracy"), size = 1) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_continuous(
+    breaks = seq(1932, 2022, by = 10),
+    labels = as.character(seq(1932, 2022, by = 10)),
+    expand = c(0.01,0.01),
+    sec.axis = sec_axis(~.,
+                        breaks = democracy$year[democracy$year >= 1932 & !duplicated(democracy$president, fromLast = TRUE)], 
+                        labels = democracy$president[democracy$year >= 1932 & !duplicated(democracy$president, fromLast = TRUE)])
+    ) +
+  geom_vline(data = subset(democracy, year >= 1932 & !duplicated(president, fromLast = TRUE)), 
+             aes(xintercept = year), linetype = "dashed", color = "gray") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    axis.title.y = element_text(face = "bold"),
+    legend.title = element_text(face = "bold"),
+    axis.text.x.top = element_markdown(angle = 45, hjust = 0, vjust = 0.01, size = 6),
+    axis.title.x.top = element_blank(),
+    plot.title = element_text(margin = margin(b = 10)),
+    plot.subtitle = element_text(margin = margin(b = 20)),
+    panel.grid.major = element_line(size = 0.7),
+    panel.grid.minor = element_line(size = 0.7),
+    plot.caption = element_text(size = 5),
+    plot.caption.position = "plot"
+    ) +
+  labs(
+    title = "Varieties of Democracy across U.S. Presidents",
+    # subtitle = "V-Dem categorizes democracy according to the various forms it assumes and measures deliberative, egalitarian, electoral, liberal and participatory democracy. 
+    # While there can be no democracy without an electoral nature to it, the remaining varieties measure the quality of democracy.\n
+    # • Deliberative: The deliberative principle of democracy focuses on the process by which decisions are reached in a polity.
+    # • Egalitarian: The egalitarian principle of democracy holds that material and immaterial inequalities inhibit the exercise of formal rights and liberties, and diminish the ability of citizens from all social groups to participate.
+    # • Electoral: The electoral principle of democracy seeks to embody the core value of making rulers responsive to citizens, achieved through electoral competition for the electorate’s approval under circumstances when suffrage is extensive; political and civil \n                       society organizations can operate freely; elections are clean and not marred by fraud or systematic irregularities; and elections affect the composition of the chief executive of the country.
+    # • Liberal: The liberal principle of democracy emphasizes the importance of protecting individual and minority rights against the tyranny of the state and the tyranny of the majority.
+    # • Participatory: The participatory principle of democracy emphasizes active participation by citizens in all political processes, electoral and non-electoral.",
+    caption = "Data source: https://github.com/owid/notebooks/blob/main/BastianHerre/democracy/datasets/final/vdem_row_final.csv",
+    y = "Index Value",
+    x = "Year",
+    color = "Democracy Indices"
+  )
+```
+
+- Answer: While policies swing tremendously based on the party entering office, the same cannot be witnessed in Figure \@ref(fig:V-Dem-Across-Presidents) for the quality of democracy. Starting with the post-World War 2 order there has been a steady improvement of democratic standards. These only fluctuated in the context of domestic political events or geopolitical dynamics. Two examples: Richard Nixon taking office in 1969 coincided with a decrease in electoral and deliberative democracy; the Vietnam War likely playing a role here. Similarly, Bush Jr. entering office in 2001 coincided with a loss of democratic values across multiple varieties of democracy; 9/11 and Dick Cheney's vice presidency likely playing a role here. Connecting volatile democratic quality to swings in the presidential office seems unreasonable, even when considering the Trump presidency. Not a party swing in office here is the indicator for a loss of democratic values but instead, the attack on liberal democracy itself like Donald Trump's rhetoric starting in 2016 and his policies starting in 2017.
+
 f)  Create a meaningful plot / figure with the dataset. Make sure to
     provide a figure caption (via the chunk options / Rmarkdown) and
     correctly label the figure.
+    
+- done above
 
 ## Final Note
 
